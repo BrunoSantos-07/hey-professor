@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+
+# Definição de cores para saída no terminal
+NC='\033[0m'      # “No Color” – reseta para cor padrão
+BBlue='\033[1;34m'  # Texto em azul brilhante
+BRed='\033[1;31m'   # Texto em vermelho brilhante
+
+# Expressão regular para identificar o ID da issue (ex.: ABC-123)
+REGEX_ISSUE_ID="[a-zA-Z0-9,\.\_\-]+-[0-9]+"
+
+# Obtém o nome da branch atual (ex.: feature/ABC-123-minha-feature → ABC-123-minha-feature)
+BRANCH_NAME=$(git symbolic-ref --short HEAD)
+
+# Extrai apenas o ID da issue a partir do nome da branch (ex.: “ABC-123”)
+ISSUE_ID=$(echo "$BRANCH_NAME" | grep -o -E "$REGEX_ISSUE_ID")
+
+# Lê a mensagem de commit que está sendo criada/padroniza-a
+COMMIT_MESSAGE=$(cat "$1")
+
+# Se não houver um ISSUE_ID válido, interrompe o commit com erro
+if [ -z "$ISSUE_ID" ]; then
+    echo -e "${BRed}Branch não está no padrão que deveria mestre... ${NC}"
+    exit 1
+fi
+
+# Se a mensagem de commit já começa com o ISSUE_ID, permite sem alterações
+# Exemplo: “ABC-123: corrigido bug”
+if [[ $COMMIT_MESSAGE == $ISSUE_ID* ]]; then
+    exit 0
+fi
+
+# Caso contrário, prefixa a mensagem com “ISSUE_ID: ”
+# e grava de volta no arquivo de mensagem do commit
+echo "$ISSUE_ID: $COMMIT_MESSAGE" >$1
